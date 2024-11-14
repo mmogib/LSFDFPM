@@ -1,0 +1,12 @@
+┌ Error: [2024-11-07 13:41:41] An error occured: DomainError(-6.890886690073723, "log was called with a negative real argument but will only return a complex result if called with a complex argument. Try log(Complex(x)).")
+└ @ Main e:\Dropbox\Research\Projects\IRC_WITH_HOMIDAN\KFUPM_Project_IV_DFPM_withoutLineSearch\LSFDFPM\src\functions.jl:356
+┌ Error: [2024-11-07 13:41:41] An error occured: DomainError(-9.0, "log was called with a negative real argument but will only return a complex result if called with a complex argument. Try log(Complex(x)).")
+└ @ Main e:\Dropbox\Research\Projects\IRC_WITH_HOMIDAN\KFUPM_Project_IV_DFPM_withoutLineSearch\LSFDFPM\src\functions.jl:356
+┌ Error: [2024-11-07 13:41:45] An error occured: DomainError(-6.683044248051015, "log was called with a negative real argument but will only return a complex result if called with a complex argument. Try log(Complex(x)).")
+└ @ Main e:\Dropbox\Research\Projects\IRC_WITH_HOMIDAN\KFUPM_Project_IV_DFPM_withoutLineSearch\LSFDFPM\src\functions.jl:356
+┌ Error: [2024-11-07 13:41:45] An error occured: DomainError(-9.0, "log was called with a negative real argument but will only return a complex result if called with a complex argument. Try log(Complex(x)).")
+└ @ Main e:\Dropbox\Research\Projects\IRC_WITH_HOMIDAN\KFUPM_Project_IV_DFPM_withoutLineSearch\LSFDFPM\src\functions.jl:356
+┌ Error: [2024-11-07 13:43:28] An error occured: DomainError(-6.677432858748693, "log was called with a negative real argument but will only return a complex result if called with a complex argument. Try log(Complex(x)).")
+└ @ Main e:\Dropbox\Research\Projects\IRC_WITH_HOMIDAN\KFUPM_Project_IV_DFPM_withoutLineSearch\LSFDFPM\src\functions.jl:356
+┌ Error: [2024-11-07 13:43:28] An error occured: DomainError(-9.0, "log was called with a negative real argument but will only return a complex result if called with a complex argument. Try log(Complex(x)).")
+└ @ Main e:\Dropbox\Research\Projects\IRC_WITH_HOMIDAN\KFUPM_Project_IV_DFPM_withoutLineSearch\LSFDFPM\src\functions.jl:356

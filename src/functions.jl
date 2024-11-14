@@ -42,7 +42,7 @@ end
 
 
 function run_algorithm(algo::Function, dim, fns, args...; printit::Bool=false, kwargs...)
-    xs = createInitialPoints(dim)
+    xs = getInitialPoints(dim)
     num_rows = length(xs) * length(fns)
     T = Matrix{Any}(undef, num_rows, 8)
     counter = 0
@@ -174,4 +174,197 @@ function produceProfileImages(input_file::String)
     end
     printstyled("Finished saving in $output_folder\n"; color=:green)
     plts
+end
+
+function save_plots(df::DataFrame; algorithms::Vector{Symbol}, label::Symbol, folder_name::String)
+    colors = [:red,          # 1
+        :blue,         # 2
+        :green,        # 3
+        :darkorange1,  # 4
+        :purple,       # 5
+        :yellow,       # 6
+        :cyan,         # 7
+        :magenta,      # 8
+        :black,        # 9
+        :lime
+    ]
+    (w, h) = Plots._plot_defaults[:size]
+    ys = 0:0.1:1.01
+
+    plts = map([(:iterations, "Iterations"), (:time, "Time"),
+        (:func_evals, "Function Evaluations")]) do (data_point, data_header)
+        T = Matrix{Float64}(undef, Int(DataFrames.nrow(df) / length(algorithms)), length(algorithms))
+        foreach(enumerate(algorithms)) do (i, name)
+            d = select(filter(r -> r[label] == String(name), df),
+                [data_point, :flag] => ByRow((itr, f) -> occursin("converge", f) ? itr : NaN) => Symbol(data_header))
+            T[:, i] = d[!, Symbol(data_header)]
+        end
+        pdata = performance_profile_data(T)
+        max_ratio = pdata[3]
+        xs = 1:ceil(max_ratio + 0.5)
+        p = performance_profile(PlotsBackend(), T, String.(algorithms);
+            title="$(data_header)",
+            logscale=true,
+            size=(1.2w, h),
+            xlabel="Performance ratio",
+            ylabel="Solved problems (%)",
+            legendfontsize=8,
+            linestyle=:dash,
+            palette=colors,
+            linewidth=2.5,
+            minorgrid=true, leg=:bottomright
+        )
+        plot(p, xticks=(xs, map(x -> "$(Int(x))", xs)),
+            yticks=(ys, map(x -> "$x", ys))), data_header
+    end
+
+    for (p, name) in plts
+        # output_file_svg = outputfilename("$(folder_name)_$name", "svg"; suffix)
+        output_file_png = outputfilename("$(folder_name)/$(name).png")
+
+        # Plots.svg(p, output_file_svg)
+        Plots.png(p, output_file_png)
+    end
+end
+
+
+
+function run_experiments(
+    dims::Vector{Int},
+    LS::AbstractLineSearch;
+    problems_filter::Function=i -> i != 9,
+    maxitrs=2_000,
+    max_time::Union{Nothing,Integer}=nothing,
+    μ0=0.5,
+    γ=1.8,
+    ε=1e-6,
+    α=0.7,
+    linesearchs=[LIX],
+)
+    search_directions = mohammed_ibrahim_suliman #getAllSearchDirection()
+    lss = if isa(LS, NoLineSearch)
+        nothing
+    else
+        linesearchs
+    end
+
+    io = open("./results/error_log.txt", "w+")
+    logger = SimpleLogger(io)
+    dfs = with_logger(logger) do
+        return run_experiments(dims, search_directions, lss;
+            problems_filter=problems_filter,
+            maxitrs=maxitrs,
+            max_time=max_time,
+            μ0=μ0,
+            γ=γ,
+            ε=ε,
+            α=α,
+        )
+    end
+    close(io)
+    dfs
+
+end
+
+function run_experiments(dims,
+    search_directions,
+    linesearches;
+    problems_filter=i -> i != 9,
+    maxitrs=2_000,
+    max_time::Union{Nothing,Integer}=nothing,
+    μ0=0.5,
+    γ=1.8,
+    ε=1e-6,
+    α=0.7,
+)
+
+    log_print(sd, ls, f, x0_name, dim, sol) = isnothing(linesearches) ? join([String(Symbol(sd)), " : ",
+            "NoLineSearch", " : ",
+            String(Symbol(f)), ":",
+            x0_name, " : ",
+            "dim: ", dim, " : ",
+            sol, "\n"], "") : join([String(Symbol(sd)), " : ",
+            String(Symbol(ls)), " : ",
+            String(Symbol(f)), ":",
+            x0_name, " : ",
+            "dim: ", dim, " : ",
+            sol, "\n"], "")
+
+
+    lss = isnothing(linesearches) ? [(g, m) -> nothing] : isa(linesearches, Vector) ? linesearches : [linesearches]
+    results_sd = map([search_directions]) do sd
+        df_lss = map(lss) do ls
+            df_dim = map(dims) do dim
+                all_points = getInitialPoints(dim)
+                problems = getFunctionsWithPoints(all_points)
+                problems = problems[map(problems_filter, 1:length(problems))]
+                df_f = map(problems) do (f, points)
+                    df_p = map(points) do (x0_label, x0_name, x0)
+                        df = DataFrame(
+                            search_direction=String(Symbol(sd)),
+                            line_search=isnothing(linesearches) ? "NoLineSearch" : String(Symbol(ls)),
+                            problem=String(Symbol(f)),
+                            dim=dim,
+                            x0_label=String(x0_label),
+                            x0_name=x0_name,
+                            norm_f=NaN,
+                            iterations=NaN,
+                            func_evals=NaN,
+                            time=NaN,
+                            flag="Error"
+                        )
+                        try
+                            t_sol = @timed LSFDFPM(
+                                f,
+                                x0,
+                                sd(),
+                                ls(f, maxitrs),
+                                maxitrs,
+                                ε,
+                                max_time,
+                                μ0,
+                                γ,
+                                α
+                            )
+
+                            t = t_sol.time
+                            sol = t_sol.value
+                            norm_f = sol[1]
+                            iterations = sol[2]
+                            func_evals = sol[3]
+                            flag = String(sol[end])
+
+                            df = DataFrame(
+                                search_direction=String(Symbol(sd)),
+                                line_search=isnothing(linesearches) ? "NoLineSearch" : String(Symbol(ls)),
+                                problem=String(Symbol(f)),
+                                dim=dim,
+                                x0_label=String(x0_label),
+                                x0_name=String(x0_name),
+                                norm_f=norm_f,
+                                iterations=iterations,
+                                func_evals=func_evals,
+                                time=t,
+                                flag=flag
+                            )
+                            c = occursin("converge", flag) ? :green : :blue
+                            printstyled(log_print(sd, ls, f, x0_name, dim, sol), color=c)
+                        catch e
+                            printstyled(log_print(sd, ls, f, x0_name, dim, "Error"), color=:red)
+
+                            timestamp = Dates.format(now(), "yyyy-mm-dd HH:MM:SS")
+                            @error "[$timestamp] An error occured: $e"
+                        end
+                        df
+                    end
+                    vcat(df_p...)
+                end
+                vcat(df_f...)
+            end
+            vcat(df_dim...)
+        end
+        vcat(df_lss...)
+    end
+    results_df = vcat(results_sd...)
+    results_df
 end

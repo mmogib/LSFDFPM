@@ -43,7 +43,7 @@ function abubaker_mohammad()
     end
 end
 
-function compute_search_direction(; r=0.1, ψ=0.2, αmin=1.0e-10, αmax=Inf64)
+function mohammed_ibrahim_suliman(; r=0.1, ψ=0.2, αmin=1.0e-10, αmax=Inf64)
     return function findNewDk(Fu0, Fu1, d0, u0, u1, k)
         # println("k=$k", " ", norm.([Fu0, Fu1, d0, u0, u1]))
 
@@ -53,10 +53,15 @@ function compute_search_direction(; r=0.1, ψ=0.2, αmin=1.0e-10, αmax=Inf64)
         v1 = max(ψ * norm(d0) * norm(y0), norm(Fu0)^2)
         β1 = dot(Fu1, y0) / v1
         α12 = dot(Fu1, d0) / v1
-        α11 = min(αmax, max(αmin, dot(s0, y0) / dot(y0, y0)))
+        # α11 = min(αmax, max(αmin, dot(s0, y0) / dot(y0, y0)))
+        α11 = dot(s0, y0) / dot(y0, y0)
 
         return -α11 * Fu1 + β1 * d0 - α12 * y0
     end
 end
 
-export steepest_descent, cruz_raydan, ye_zhou, abubaker_mohammad, compute_search_direction
+function getAllSearchDirection()
+    return [
+        steepest_descent, cruz_raydan, ye_zhou, abubaker_mohammad, mohammed_ibrahim_suliman
+    ]
+end

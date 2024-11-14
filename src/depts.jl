@@ -1,4 +1,6 @@
-using LinearAlgebra, Dates
+using LinearAlgebra, Dates, Statistics
+using Logging
+using Random, Distributions
 using Plots
 using BenchmarkProfiles
 using LaTeXStrings
